@@ -1,0 +1,33 @@
+{
+  "name": "judgment-summary-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Turns a backlog of Brazilian court case files into one house-style summary per case in a client spreadsheet: a two-call model pipeline behind two gates (a deterministic format gate and a fidelity auditor that can only refuse), run over the Message Batches API, writing only to a copy and never over human-reviewed work",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "summarise": "node --experimental-strip-types src/cli.ts",
+    "fixtures": "node --experimental-strip-types scripts/make-fixtures.ts",
+    "eval": "node --experimental-strip-types src/cli.ts eval",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
+    "exceljs": "^4.4.0",
+    "unpdf": "^1.8.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9",
+    "@types/node": "^22",
+    "eslint": "^9",
+    "pdf-lib": "^1.17.1",
+    "typescript": "^5",
+    "typescript-eslint": "^8",
+    "vitest": "^5.0.2"
+  }
+}
