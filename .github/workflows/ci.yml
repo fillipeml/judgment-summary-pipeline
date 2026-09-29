@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: typecheck + lint + tests + demo
+    runs-on: ubuntu-latest
+    env:
+      DEMO_MODE: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+      - name: Reconnaissance commands
+        run: |
+          npm run summarise -- inspect
+          npm run summarise -- coverage
+          npm run summarise -- style
+
+      - name: The whole chain, and the row the auditor must catch
+        run: |
+          npm run summarise -- run | tee run.txt
+          grep -q "verification: clean" run.txt
+          grep -q "5 kept, 1 demoted" run.txt
+          grep -q "1000007-77.2099.8.26.0100" run.txt
+
+      - name: The second run pays for nothing
+        run: |
+          npm run summarise -- run | tee rerun.txt
+          grep -q "0 extracted, 8 already done" rerun.txt
+          grep -q "total model cost: US\$ 0.0000" rerun.txt
+          grep -q "verification: clean" rerun.txt
+
+      - name: Both measurement harnesses
+        run: |
+          npm run eval | tee eval.txt
+          grep -q "0 severe" eval.txt
+          grep -q "1 worse" eval.txt
+
+      - name: The reports were written
+        run: ls .demo/reports/approval-pack.md .demo/reports/coverage.md .demo/reports/house-style.md .demo/reports/fidelity.md .demo/reports/parity.md
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
