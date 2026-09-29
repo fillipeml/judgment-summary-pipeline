@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "Model prices in USD per million tokens. This file is CONFIGURATION, not code: prices",
+    "change, and a wrong number here silently corrupts every cost report. Each entry names",
+    "where its numbers came from. A model that is not listed is reported as unpriced rather",
+    "than priced with a guess — see src/model/cost.ts.",
+    "cacheWritePerMTok defaults to 1.25x input and cacheReadPerMTok to 0.10x input, the",
+    "standard five-minute cache premium and discount; entries override them where the model",
+    "prices its cache differently."
+  ],
+  "default": "claude-opus-5",
+  "models": {
+    "claude-opus-5": {
+      "inputPerMTok": 5,
+      "outputPerMTok": 25,
+      "source": "Anthropic model catalogue: Claude Opus 5 is a drop-in upgrade at Opus 4.8 pricing, $5/$25 per MTok"
+    },
+    "claude-opus-5-5": {
+      "inputPerMTok": 4,
+      "outputPerMTok": 20,
+      "cacheReadPerMTok": 0.2,
+      "source": "Anthropic model catalogue: Claude Opus 5.5, $4/$20 per MTok, cache reads $0.20"
+    },
+    "claude-fable-5-1": {
+      "inputPerMTok": 10,
+      "outputPerMTok": 50,
+      "cacheReadPerMTok": 0.25,
+      "source": "Anthropic model catalogue: Claude Fable 5.1, $10/$50 per MTok, cache reads $0.25, batch $5/$25"
+    },
+    "claude-opus-4-8": {
+      "inputPerMTok": 5,
+      "outputPerMTok": 25,
+      "source": "Anthropic model catalogue: Claude Opus 4.8 pricing, $5/$25 per MTok"
+    }
+  }
+}
