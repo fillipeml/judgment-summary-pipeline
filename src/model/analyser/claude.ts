@@ -5,8 +5,10 @@
  * combination. The ceiling is high so that reasoning plus the map fit and the map never
  * comes back empty.
  *
- * Call 2 does not stream, does not think, and is given a schema. It is transcription from a
- * map that already contains the answer.
+ * Call 2 does not stream and is given a schema. It is transcription from a map that already
+ * contains the answer — but it still thinks: the configured model runs adaptive thinking
+ * unless told otherwise, and omitting the parameter does not turn it off. The token budget
+ * is sized for thinking plus the structured answer, not for the answer alone.
  *
  * Both put the system prompt in a cached block. Both prompts are long and identical for
  * every case in a run, while the user turn changes every time, so caching turns most of the

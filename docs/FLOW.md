@@ -57,9 +57,10 @@ writes `text/` and `batch/plans.json`. A PDF with no text layer is a scan: it is
 left out, not passed on as an empty string. A case with nothing readable stays blank.
 
 **2 — map-submit.** Segments each case's text, builds one request per case, chunks at
-`BATCH_CHUNK_SIZE` (100), and persists the batch id after *every* chunk. A single submission
-larger than the gateway accepts is rejected whole, and an interrupted submission must not
-lose a batch id.
+`BATCH_CHUNK_SIZE` (100), and persists the batch id after *every* chunk. The chunk size is
+ours — the API takes 100,000 requests or 256 MB in one batch — and it exists so that an
+interrupted submission loses one chunk rather than the whole run. An interrupted submission
+must not lose a batch id.
 
 **3 — map-collect.** Polls each batch. When one has ended, streams its results — an iterator,
 so several hundred are never in memory at once — and writes `maps/`. Usage is priced at the

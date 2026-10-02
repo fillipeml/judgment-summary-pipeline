@@ -19,7 +19,8 @@ export interface Config {
   outDir: string;
   /** How many model calls at once, outside the Batch API. */
   concurrency: number;
-  /** Requests per batch: a single submission larger than this is rejected by the gateway. */
+  /** Requests per batch. Ours, not the API's limit: it bounds what one interrupted
+   *  submission can cost. */
   batchChunkSize: number;
   /** Seconds between polls of a batch. */
   pollSeconds: number;

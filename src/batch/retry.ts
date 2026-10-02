@@ -56,8 +56,8 @@ export async function mapLimit<T, R>(
   return results;
 }
 
-/** Splits a list into chunks: a submission larger than the gateway accepts is rejected
- *  whole, so the run is chunked before anything is sent. */
+/** Splits a list into chunks, so an interrupted submission loses one chunk rather than the
+ *  whole run. The API would take the lot in one batch. */
 export function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));

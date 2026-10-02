@@ -4,9 +4,14 @@
  * economics of a few hundred case files. The cost is that a batch is asynchronous and
  * opaque: submit, wait hours, collect.
  *
- * One constraint shapes the runner: a single submission of more than about a hundred
- * requests is rejected by the gateway, so a run is chunked and every chunk id is persisted
- * before anything is awaited. */
+ * One decision shapes the runner: submissions are chunked at a hundred requests, and every
+ * chunk id is persisted before anything is awaited.
+ *
+ * The chunk size is ours, not the API's. A Message Batch is limited to 100,000 requests or
+ * 256 MB, whichever comes first, so a two-thousand-row run would fit in one submission. It is
+ * split anyway because the unit of loss on an interrupted submit is one chunk: a hundred cases
+ * to re-submit rather than the whole backlog, and a hundred ids to reconcile rather than one
+ * batch whose contents nobody recorded. */
 import type Anthropic from "@anthropic-ai/sdk";
 
 import type { UsageRaw } from "../model/cost.ts";
