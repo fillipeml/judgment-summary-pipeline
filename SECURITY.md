@@ -8,7 +8,7 @@ You will get an acknowledgement within 72 hours and a fix or mitigation plan wit
 
 ## Scope
 
-This repository is a portfolio project. The demo runs on fictional data only: synthetic judgments written for this repository, invented parties on reserved `.example` domains, and case numbers dated 2099 with invalid check digits. It does not process real personal data, and no real case file is committed here.
+This repository is a portfolio project. The demo runs on fictional data only: synthetic judgments written for this repository, invented parties, and case numbers dated 2099 with invalid check digits. It does not process real personal data, and no real case file is committed here.
 
 In a real deployment this pipeline reads court judgments, which in Brazil may be under judicial secrecy and always carry personal data. Reports about secrets or personal data accidentally committed are especially welcome and will be treated as critical.
 

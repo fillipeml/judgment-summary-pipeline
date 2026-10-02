@@ -93,11 +93,11 @@ describe("choosing what to read for one case", () => {
     expect(plan.why).toContain("non-decisive");
   });
 
-  it("uses the whole docket only when there is no individual filing", () => {
+  it("prefers a named judgment over anything else attributed to the case", () => {
     const docket = doc("autos completos.pdf", 5_000_000);
-    expect(planFor(CASE, [], docket).strategy).toBe("full_docket");
-    // With a named judgment present, the docket is not read: it costs more and says less.
-    expect(planFor(CASE, [doc("sentenca.pdf")], docket).strategy).toBe("named_decisions");
+    // The docket arrives as an ordinary attributed document; a named judgment still wins,
+    // because it costs less and says more.
+    expect(planFor(CASE, [doc("sentenca.pdf"), docket]).strategy).toBe("named_decisions");
   });
 
   it("returns an empty plan rather than inventing a source", () => {

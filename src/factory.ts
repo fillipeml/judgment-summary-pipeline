@@ -4,7 +4,8 @@
  * That is the point: the demo exercises the same code as production, including the batch
  * chunking, the polling and the two gates, and the only thing it substitutes is where the
  * readings and the case files come from. A reviewer can check the claim by reading this
- * file alone, because `DEMO_MODE` appears nowhere else. */
+ * file alone: it is the only module that branches on demo mode. The environment variable
+ * itself is read in one place, config.ts. */
 import { readFileSync } from "node:fs";
 
 import Anthropic from "@anthropic-ai/sdk";

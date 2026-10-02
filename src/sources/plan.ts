@@ -12,7 +12,7 @@ import type { SourceDocument } from "./store.ts";
 import { DECISIVE, type DocumentKind } from "./classify.ts";
 import { caseDigits } from "../domain/case-number.ts";
 
-export type PlanStrategy = "named_decisions" | "generic" | "weak" | "full_docket" | "none";
+export type PlanStrategy = "named_decisions" | "generic" | "weak" | "none";
 
 export interface SourcePlan {
   caseNumber: string;
@@ -35,7 +35,6 @@ function largestOfKind(documents: SourceDocument[], kind: DocumentKind): SourceD
 export function planFor(
   caseNumber: string,
   documents: SourceDocument[],
-  fullDocket?: SourceDocument,
 ): SourcePlan {
   const usable = documents.filter((d) => d.kind !== "not_pdf");
 
@@ -66,15 +65,6 @@ export function planFor(
       strategy: "weak",
       documents: anything.slice(0, 1),
       why: `only non-decisive filings: the largest is a ${anything[0]!.kind}`,
-    };
-  }
-
-  if (fullDocket) {
-    return {
-      caseNumber,
-      strategy: "full_docket",
-      documents: [fullDocket],
-      why: "no individual filing: the whole docket, which segmentation reduces to its decisions",
     };
   }
 

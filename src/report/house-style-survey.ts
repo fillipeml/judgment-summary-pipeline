@@ -33,6 +33,10 @@ export interface StyleSurvey {
   dominantSettlementForm: string | null;
   /** How decisive that majority is. A thin margin is a reason not to enforce the rule. */
   dominancePct: number | null;
+  /** The denominator dominancePct is over: approved rows whose opening matched a known
+   *  settlement form, which is fewer than `settlementRows`. Reported so the percentage can
+   *  name what it is a percentage of. */
+  settlementFormTotal: number;
   meritsForms: FormCount[];
   /** Approved rows matching no accepted opening: the ceiling on how strict the gate can be. */
   unrecognised: FormCount;
@@ -85,6 +89,7 @@ export function surveyHouseStyle(rows: WorkbookRow[]): StyleSurvey {
     settlementRows,
     settlementForms,
     dominantSettlementForm: winner?.form ?? null,
+    settlementFormTotal: settlementTotal,
     dominancePct:
       winner && settlementTotal
         ? Math.round((winner.count / settlementTotal) * 1000) / 10
@@ -113,7 +118,7 @@ export function renderStyleSurvey(survey: StyleSurvey): string {
   lines.push("");
   if (survey.dominantSettlementForm) {
     lines.push(
-      `**Winner: "${survey.dominantSettlementForm}"** — ${survey.dominancePct}% of approved settlement rows.`,
+      `**Winner: "${survey.dominantSettlementForm}"** — ${survey.dominancePct}% of the ${survey.settlementFormTotal} approved rows whose opening matched a known settlement form.`,
       "That is the form the structuring prompt asks for, and the one the gate accepts.",
       "",
     );
