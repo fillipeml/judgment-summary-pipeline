@@ -27,7 +27,7 @@ import { measureParity, renderParity, type ParityCase } from "./eval/parity.ts";
 import { uniformStride } from "./eval/sample.ts";
 import { build } from "./factory.ts";
 import { segmentDecision } from "./extract/segment.ts";
-import { formatUsage, unpricedWarning } from "./model/cost.ts";
+import { formatUsage, sumUsage, unpricedWarning } from "./model/cost.ts";
 import { renderApprovalPack } from "./report/approval.ts";
 import { renderCoverage } from "./report/coverage.ts";
 import { renderStyleSurvey, surveyHouseStyle } from "./report/house-style-survey.ts";
@@ -314,6 +314,9 @@ async function evaluate(config: Config, size: number): Promise<void> {
   const parity = await measureParity(parts.judge, pairs, {
     size: pairs.length,
     concurrency: config.concurrency,
+    // What it cost to produce the generated side. The bench throws these summaries away
+    // after scoring, and the cost used to go with them.
+    generationUsage: sumUsage(...generated.map((g) => g.usage)),
   });
   log(
     `parity: ${parity.sampled} sampled of ${parity.population} approved — ` +

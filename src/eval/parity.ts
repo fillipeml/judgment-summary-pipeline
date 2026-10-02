@@ -47,13 +47,22 @@ export interface ParityReport {
   houseStyleRate: number | null;
   meanScore: number | null;
   outcomes: ParityOutcome[];
+  /** What the judge spent comparing the pairs. */
   usage: Usage;
+  /** What it cost to produce the generated side of those pairs.
+   *
+   *  The parity harness is the one bench that cannot reuse the pipeline's output: approved
+   *  rows are excluded from a normal run by the first guard, so it generates its own
+   *  summaries — two model calls per case — and throws them away after scoring. That usage
+   *  was computed and discarded, so the reported cost was the judge's alone and understated
+   *  the bench by more than an order of magnitude. */
+  generationUsage: Usage;
 }
 
 export async function measureParity(
   judge: ParityJudge,
   cases: ParityCase[],
-  options: { size: number; concurrency?: number },
+  options: { size: number; concurrency?: number; generationUsage?: Usage },
 ): Promise<ParityReport> {
   const sample = uniformStride(cases, options.size);
   const outcomes: ParityOutcome[] = new Array(sample.length);
@@ -118,6 +127,7 @@ export async function measureParity(
       : null,
     outcomes,
     usage: sumUsage(...usages),
+    generationUsage: options.generationUsage ?? emptyUsage(),
   };
 }
 
@@ -137,7 +147,9 @@ export function renderParity(report: ParityReport): string {
     `| At least as good | ${formatRate(report.atLeastAsGoodRate)} |`,
     `| In house style | ${formatRate(report.houseStyleRate)} |`,
     `| Mean score (0-10) | ${report.meanScore ?? "n/a"} |`,
-    `| Cost | ${formatUsage(report.usage)} |`,
+    `| Cost, judging | ${formatUsage(report.usage)} |`,
+    `| Cost, generating the summaries judged | ${formatUsage(report.generationUsage)} |`,
+    `| Cost, total | ${formatUsage(sumUsage(report.usage, report.generationUsage))} |`,
     "",
     "| Verdict | Rows |",
     "| --- | --- |",

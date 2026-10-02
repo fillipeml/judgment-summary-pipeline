@@ -101,7 +101,7 @@ flowchart TB
   WB -.->|approved rows| PR[parity harness]
 ```
 
-`batch/runner.ts` is the seven stages and the only place they are sequenced; `batch/state.ts` is everything they write to disk, which is what makes a run that dies at hour three resume at hour three. The boundaries are interfaces with two implementations each: the batch client (Claude, recorded), the analyser, auditor and judge (Claude, recorded), the document store (folder, manifest, composite). `factory.ts` is the only module that picks between them, and the only module that mentions `DEMO_MODE`.
+`batch/runner.ts` is the seven stages and the only place they are sequenced; `batch/state.ts` is everything they write to disk, which is what makes a run that dies at hour three resume at hour three. The boundaries are interfaces with two implementations each: the batch client (Claude, recorded), the analyser, auditor and judge (Claude, recorded), the document store (folder, manifest, composite). `factory.ts` is the only module that picks between them, and the only module that branches on demo mode — via `config.demoMode`, since `config.ts` is the one place that reads `DEMO_MODE` from the environment.
 
 ## Design decisions
 
@@ -196,7 +196,15 @@ built so the pipeline loses, because a harness that reports four wins is worth n
 | A full run over the corpus | US$ 0.6205 |
 | The same run again, unchanged | US$ 0.0000 |
 | The fidelity harness | US$ 0.1767 |
-| The parity harness | US$ 0.0267 |
+| The parity harness, judging | US$ 0.0267 |
+| The parity harness, generating the summaries it judges | US$ 0.3852 |
+| The parity harness, total | US$ 0.4119 |
+
+The parity harness is split because it is the one bench that cannot reuse the pipeline's
+output: approved rows are excluded from a normal run by the first guard, so it generates its
+own summaries — two model calls per case — and discards them after scoring. That cost was
+computed and thrown away with them, and the figure published here was the judge's alone,
+fifteen times under the real one.
 
 Both model rounds go through the Message Batches API, which bills at half the synchronous
 price. The discount is part of the usage type rather than applied at a call site, so no caller
