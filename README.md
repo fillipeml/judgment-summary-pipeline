@@ -144,6 +144,146 @@ npm run summarise -- stage map-submit
 
 A production run waits hours between rounds, so `run` polls and each stage can also be run by hand across two days. Nothing is recomputed: a case whose summary was already accepted is never paid for twice. See [docs/DEMO.md](docs/DEMO.md) for what each fixture case is for, [docs/FLOW.md](docs/FLOW.md) for the stages and the state on disk, and [docs/GLOSSARY.md](docs/GLOSSARY.md) for the Brazilian procedural terms.
 
+## Evaluation
+
+Two harnesses run on every CI build, over the committed corpus.
+
+**Fidelity** re-reads each delivered summary against the same segmented source the generator
+saw, and asks an auditor to find assertions the source does not support. The population is the
+rows that were actually *written* — a row the gate refused was never shown to anyone, so
+counting it would let the system earn credit for work it declined to do.
+
+| Measure | Value |
+| --- | --- |
+| Delivered rows, all sampled | 5 |
+| No unsupported assertion | 100% |
+| Severe: invented or contradicted | 0% |
+| Mean fidelity score (0–10) | 9.6 |
+
+**Parity** compares the pipeline against the rows a lawyer had already written and approved.
+It has to generate its own summaries for those cases, because an approved row is excluded from
+the target set by the first guard and so the pipeline never produces one otherwise.
+
+| Measure | Value |
+| --- | --- |
+| Approved cases, all sampled | 4 |
+| Same outcome | 75% |
+| At least as good as the reviewer | 50% |
+| In house style | 100% |
+| Mean score (0–10) | 6.5 |
+
+**And the gate outcomes themselves**, which is the number the whole design exists to produce:
+
+| Outcome | Cases |
+| --- | --- |
+| Written | 5 |
+| Held: a settlement whose terms are not in the file | 1 |
+| Held: the file contains no final decision | 1 |
+| **Demoted by the auditor after passing the cheap gate** | 1 |
+
+**What these numbers are and are not.** The corpus is twelve synthetic cases written to force
+twelve different branches, not a fifty-case golden set sampled from real work. So the tables
+above measure *the pipeline's behaviour* — that the gates fire where they should, that the
+auditor catches an invention the format check cannot see, that parity reports a loss when there
+is one — and they are not a claim about how accurately a model reads real judgments. A 50%
+"at least as good" is a deliberately unflattering fixture: one of the four approved cases is
+built so the pipeline loses, because a harness that reports four wins is worth nothing.
+
+## Cost and latency
+
+| | |
+| --- | --- |
+| A full run over the corpus | US$ 0.6205 |
+| The same run again, unchanged | US$ 0.0000 |
+| The fidelity harness | US$ 0.1767 |
+| The parity harness | US$ 0.0267 |
+
+Both model rounds go through the Message Batches API, which bills at half the synchronous
+price. The discount is part of the usage type rather than applied at a call site, so no caller
+can forget it — the project this was rebuilt from applied it in one place and over-reported
+everywhere else by a factor of two.
+
+The second run costing exactly nothing is the resumability claim made literal, and CI asserts
+it: every stage finds its own output already on disk, so re-running over an unchanged corpus
+is free. A real backlog is paid for once.
+
+**Latency is the trade.** A batch round takes minutes to hours, so a run is not interactive —
+it is a job you start and collect. For a backlog of a few thousand cases that is the right
+shape; for anything a person is waiting on, it is the wrong one.
+
+Costs are computed from the usage the API reports, never estimated. A model with no entry in
+`src/model/pricing.json` reports `null` and the reports print "unpriced", because a figure
+produced by falling back to some other model's prices is wrong and looks right.
+
+## Known failure modes
+
+Five, and what the system does about each.
+
+**A PDF with no text layer.** Detected by characters per page, reported, and left out. The case
+stays blank rather than being summarised from nothing. A vision pass would fix it and is not
+implemented.
+
+**A case with no document at all.** Stays blank. A blank cell is the correct answer when there
+is nothing to read, and the coverage report lists exactly which cases they are.
+
+**A superseded decision in a long docket.** The segmenter keeps windows around every operative
+marker and trims from the *front*, so the governing ruling survives the budget. A docket
+trimmed from the other end would report a judgment that was reversed on appeal as if it still
+stood — which is the worst failure this pipeline has, and the one the full-docket fixture
+exists to pin.
+
+**An invented figure that reads perfectly.** The cheap gate checks format, so a fluent summary
+stating a retention of 20% where the judgment says 10% passes it. The auditor is the second
+gate precisely for this, and the fixture corpus contains that exact row.
+
+**The auditor itself failing.** In production an audit call that errors *keeps* the row, because
+an outage must not turn a whole batch amber. In the fidelity harness the same failure scores as
+**severe**, because a number that could not be verified must never flatter the system. Both
+halves are in the code with the reason next to them, since either alone reads like a bug.
+
+## How AI was used
+
+**In the product:** two model calls per case, plus an auditor and a parity judge. The design is
+that the second call never sees the case file — only the first call's map — so it cannot
+introduce a fact that is not traceable to a line an auditor can check.
+
+**In building it,** an AI coding assistant wrote first drafts of the modules and most of the
+tests. What I wrote or rewrote is the part where being wrong has a consequence: the
+segmentation budget and its front-trimming rule, the gate's four questions, the auditor's
+fail-open/fail-closed asymmetry, the cost type with the batch discount built in, and the three
+guards on reviewed cells.
+
+**Rejected, concretely.** Three things I threw away or had to fix after they looked finished:
+
+- A parity harness that compared the pipeline against the reviewer-approved rows — except an
+  approved row is excluded from the target set by the first guard, so the pipeline never
+  produces a summary for one and the comparison was against nothing. It now generates its own
+  (`src/eval/generate.ts`) and throws them away after scoring.
+- A batch collector that re-priced results it had already collected, so a resumed run doubled
+  its own reported cost. `tests/demo.test.ts` asserts the second run costs exactly zero, and
+  says why in a comment.
+- A regex for "the model said it could not tell" that matched the singular *ilegível* and not
+  the plural *ilegíveis*, so a summary admitting the documents were unreadable would have been
+  written into the spreadsheet. Found by a test written to list the paraphrases, not by review.
+
+**Validated:** every structured result passes a Zod schema before anything touches the
+workbook, both gates run on every row, and the delivered file is diffed cell by cell against
+the original. Commits were made with an AI assistant; attribution trailers are omitted and the
+usage is documented here.
+
+## Data and privacy
+
+In production this pipeline reads court judgments, which in Brazil carry the personal data of
+parties, lawyers and judges, and which may be under judicial seal. Three things follow.
+
+The client's workbook is never written to — every run writes a copy and then proves the copy
+differs only in the summary column. Rows a lawyer approved are protected three times over, and
+the delivered file is diffed to show it. And the only text sent to the model is the segmented
+source and the map derived from it: no spreadsheet column other than the case number, and no
+client record of any kind.
+
+This repository runs on fictional data only. See below.
+
 ## Proving the fixtures are fictional
 
 A Brazilian case number carries two check digits computed over the rest of it (CNJ Resolution 65/2008, modulo 97 base 10). Every case number in this repository is dated **2099** and fails its own checksum, so it is not a number that can exist. This is checked, not asserted: the fixture builder refuses to run if any case number would be valid, and the test suite recomputes the digits for every row of the workbook.
