@@ -147,8 +147,19 @@ export class RunState {
   }
 
   // --- batch ids ----------------------------------------------------------------------
+  /** Records batch ids for a round, keeping any already on disk.
+   *
+   *  This replaced the file, so a second submit into the same output directory — the normal
+   *  thing to do after an interrupted one — orphaned every batch the first submit had paid
+   *  for: still running, still billed, and no longer referenced by anything that could
+   *  collect them. Merging here rather than at the two call sites means a third caller
+   *  cannot reintroduce it. */
   saveBatchIds(round: string, ids: string[]): void {
-    writeFileSync(join(this.dirs.batch, `${round}.json`), JSON.stringify({ ids }, null, 2));
+    const merged = [...new Set([...this.batchIds(round), ...ids])];
+    writeFileSync(
+      join(this.dirs.batch, `${round}.json`),
+      JSON.stringify({ ids: merged }, null, 2),
+    );
   }
 
   batchIds(round: string): string[] {
